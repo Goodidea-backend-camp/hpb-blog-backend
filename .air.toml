@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 
 [build]
 # 建置或執行主程式的指令
-cmd = "go mod tidy && go build -o ./tmp/main ."
+cmd = "go build -o ./tmp/main ."
 # 建置時觸發的二進位檔案
 bin = "tmp/main"
 # 監聽的檔案類型

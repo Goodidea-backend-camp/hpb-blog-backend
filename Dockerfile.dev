@@ -3,12 +3,11 @@ FROM golang:1.25.0-alpine
 WORKDIR /app
 
 # live-reload 工具 air
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@v1.63.0
 
-# 預先複製 go.mod 並下載依賴，以利用 Docker 的快取機制
-# 即使 go.sum 不存在也沒關係，go mod tidy 會自動生成
-COPY go.mod .
-RUN go mod tidy
+# 預先複製 go.mod and go.sum 並下載依賴，以利用 Docker 的快取機制
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
 
