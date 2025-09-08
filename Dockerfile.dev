@@ -1,0 +1,18 @@
+FROM golang:1.25.0-alpine
+
+WORKDIR /app
+
+# live-reload 工具 air
+RUN go install github.com/air-verse/air@v1.63.0
+
+# migrate 工具
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]
