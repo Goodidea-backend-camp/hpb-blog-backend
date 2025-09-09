@@ -1,3 +1,5 @@
+.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop
+
 COMPOSE_CMD = docker-compose \
     --env-file ../.env \
     -f ../docker-compose.yml \
