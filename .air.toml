@@ -1,0 +1,25 @@
+
+# .air.toml
+# air 的主要設定檔
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# 建置或執行主程式的指令
+cmd = "go build -o ./tmp/main ."
+# 建置時觸發的二進位檔案
+bin = "tmp/main"
+# 監聽的檔案類型
+include_ext = ["go", "tpl", "tmpl", "html"]
+# 忽略的檔案或目錄
+exclude_dir = ["assets", "tmp", "vendor"]
+# 觸發重新建置的延遲時間 (ms)
+delay = 1000
+
+[log]
+# Log 顏色
+time = true
+
+[misc]
+# 第一次啟動時刪除 tmp 目錄
+clean_on_exit = true
