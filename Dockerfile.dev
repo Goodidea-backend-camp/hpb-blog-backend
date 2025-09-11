@@ -1,0 +1,16 @@
+FROM golang:1.25.0-alpine
+
+WORKDIR /app
+
+# live-reload 工具 air
+RUN go install github.com/air-verse/air@v1.63.0
+
+# 預先複製 go.mod and go.sum 並下載依賴，以利用 Docker 的快取機制
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["air", "-c", ".air.toml"]
