@@ -11,21 +11,21 @@ import (
 
 const createPost = `-- name: CreatePost :one
 INSERT INTO posts (
-  title, 
-  content
+  user_id, title, content
 ) VALUES (
-  $1, $2
+  $1, $2, $3
 )
 RETURNING id, user_id, title, content, published_at, created_at, updated_at
 `
 
 type CreatePostParams struct {
+	UserID  int32  `json:"user_id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, error) {
-	row := q.db.QueryRow(ctx, createPost, arg.Title, arg.Content)
+	row := q.db.QueryRow(ctx, createPost, arg.UserID, arg.Title, arg.Content)
 	var i Post
 	err := row.Scan(
 		&i.ID,
@@ -72,17 +72,10 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
 const listPosts = `-- name: ListPosts :many
 SELECT id, user_id, title, content, published_at, created_at, updated_at FROM posts
 ORDER BY id
-LIMIT $1
-OFFSET $2
 `
 
-type ListPostsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
-
-func (q *Queries) ListPosts(ctx context.Context, arg ListPostsParams) ([]Post, error) {
-	rows, err := q.db.Query(ctx, listPosts, arg.Limit, arg.Offset)
+func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.Query(ctx, listPosts)
 	if err != nil {
 		return nil, err
 	}
