@@ -23,3 +23,6 @@ migrate-status:
 
 migrate-drop:
 	@$(COMPOSE_CMD) exec backend sh -c 'migrate -path /app/db/migrations -database "$$DATABASE_URL" drop'
+
+sqlc:
+	@$(COMPOSE_CMD) exec backend sh -c 'sqlc generate'
