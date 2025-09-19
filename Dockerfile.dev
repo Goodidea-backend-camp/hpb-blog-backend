@@ -1,16 +1,27 @@
-FROM golang:1.25.0-alpine
+# --- Build Stage ---
+# 安裝工具
+FROM golang:1.25.0-alpine AS builder
+WORKDIR /tools
 
+RUN apk update && apk add --no-cache git
+
+RUN go install github.com/air-verse/air@v1.63.0 && \
+    go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0 && \
+    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4
+
+# --- Final Stage ---
+# 實際開發用的環境
+FROM golang:1.25.0-alpine
 WORKDIR /app
 
-# live-reload 工具 air
-RUN go install github.com/air-verse/air@v1.63.0
+COPY --from=builder /go/bin/air /usr/local/bin/air
+COPY --from=builder /go/bin/sqlc /usr/local/bin/sqlc
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
-# 預先複製 go.mod and go.sum 並下載依賴，以利用 Docker 的快取機制
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
 EXPOSE 8080
-
 CMD ["air", "-c", ".air.toml"]
