@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.1
+    hooks:
+      # Stage 1: Auto-format with gofumpt (stricter than gofmt)
+      - id: go-fumpt
+        args: [-w]
+
+      # Stage 2: Lint with auto-fix
+      - id: golangci-lint
+        args: [--fix, --config=.golangci.yml]
+
+      # Stage 3: Ensure go.mod and go.sum are tidy
+      - id: go-mod-tidy
