@@ -8,10 +8,10 @@ import (
 
 type PostStore interface {
 	CreatePost(ctx context.Context, arg db.CreatePostParams) (db.Post, error)
-	GetPost(ctx context.Context, id int64) (db.Post, error)
+	GetPost(ctx context.Context, id int32) (db.Post, error)
 	ListPosts(ctx context.Context) ([]db.Post, error)
 	UpdatePost(ctx context.Context, arg db.UpdatePostParams) (db.Post, error)
-	DeletePost(ctx context.Context, id int64) error
+	DeletePost(ctx context.Context, id int32) error
 }
 
 type SQLPostStore struct {
