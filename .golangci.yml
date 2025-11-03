@@ -1,0 +1,77 @@
+version: '2'
+run:
+  go: '1.25'
+  timeout: 5m
+linters:
+  enable:
+    # Static analysis & bugs
+    - govet # Examine Go source code and report suspicious constructs
+    - staticcheck # Advanced static analysis checks
+    - ineffassign # Detect ineffectual assignments
+    - unused # Find unused constants, variables, functions and types
+
+    # Error handling
+    - errcheck # Check for unchecked errors
+    - errorlint # Ensure correct use of Go 1.13+ error wrapping
+    - err113 # Enforce error wrapping and custom error types
+    - nilerr # Detect incorrect nil error returns
+
+    # Code quality & complexity
+    - gocyclo # Check cyclomatic complexity
+    - gocritic # Comprehensive checks for bugs, performance and style issues
+    - unconvert # Remove unnecessary type conversions
+    - unparam # Detect unused function parameters
+    - dupl # Find code duplication
+
+    # Performance
+    - prealloc # Find slice declarations that could be preallocated
+    - makezero # Find misuse of make and append with zero-length slices
+
+    # Resource management & concurrency safety
+    - bodyclose # Check HTTP response bodies are closed
+    - rowserrcheck # Check SQL rows.Err() is properly handled
+    - sqlclosecheck # Ensure SQL resources are properly closed
+
+    # Code style & consistency
+    - misspell # Find commonly misspelled English words
+    - whitespace # Check for unnecessary blank lines
+    - nolintlint # Ensure nolint directives are properly formatted with explanations
+    - predeclared # Prevent shadowing of Go predeclared identifiers
+    - goconst # Find repeated strings that should be constants
+    - usestdlibvars # Detect variables that could be replaced by stdlib constants
+
+    # Security
+    - gosec # Inspect code for security problems
+  settings:
+    dupl:
+      threshold: 100
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    gocyclo:
+      min-complexity: 15
+    gosec:
+      excludes:
+        - G104
+    misspell:
+      locale: US
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - internal/db # Exclude sqlc generated files
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofumpt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - internal/db # Exclude sqlc generated files
