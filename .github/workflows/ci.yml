@@ -4,19 +4,19 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.gitignore'
-      - '.air.toml'
-      - '.tool-versions'
+      - "**/*.md"
+      - "docs/**"
+      - ".gitignore"
+      - ".air.toml"
+      - ".tool-versions"
   pull_request:
     branches: [main]
     paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.gitignore'
-      - '.air.toml'
-      - '.tool-versions'
+      - "**/*.md"
+      - "docs/**"
+      - ".gitignore"
+      - ".air.toml"
+      - ".tool-versions"
 
 jobs:
   test:
@@ -72,12 +72,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-tools-sqlc-v1.30.0
           restore-keys: |
-            ${{ runner.os }}-go-tools-
+            ${{ runner.os }}-go-tools-sqlc-
 
       - name: Install sqlc
-        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+        run: |
+          if ! command -v sqlc &> /dev/null; then
+            go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+          fi
 
       - name: Run sqlc generate
         run: sqlc generate
@@ -107,19 +110,24 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-tools-gosec-v2.22.10-govulncheck-v1.1.4
           restore-keys: |
             ${{ runner.os }}-go-tools-
 
-      - name: Run gosec
+      - name: Install security tools
         run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
+          if ! command -v gosec &> /dev/null; then
+            go install github.com/securego/gosec/v2/cmd/gosec@v2.22.10
+          fi
+          if ! command -v govulncheck &> /dev/null; then
+            go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          fi
+
+      - name: Run gosec
+        run: gosec ./...
 
       - name: Run govulncheck
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+        run: govulncheck ./...
 
   build:
     name: Build
