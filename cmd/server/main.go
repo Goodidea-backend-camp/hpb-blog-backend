@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,20 +15,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func main() {
+var errDatabaseURLNotSet = errors.New("DATABASE_URL environment variable is not set")
+
+func run() error {
 	databaseUrl := os.Getenv("DATABASE_URL")
 	if databaseUrl == "" {
-		log.Fatal("DATABASE_URL environment variable is not set")
+		return errDatabaseURLNotSet
 	}
 
 	dbpool, err := pgxpool.New(context.Background(), databaseUrl)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err)
+		return fmt.Errorf("unable to create connection pool: %w", err)
 	}
 	defer dbpool.Close()
 
 	if err := dbpool.Ping(context.Background()); err != nil {
-		log.Fatalf("Unable to ping database: %v\n", err)
+		return fmt.Errorf("unable to ping database: %w", err)
 	}
 
 	log.Println("Successfully connected to the database!")
@@ -58,6 +62,14 @@ func main() {
 
 	log.Printf("Starting server on :%s", backendPort)
 	if err := router.Run(":" + backendPort); err != nil {
+		return fmt.Errorf("server failed: %w", err)
+	}
+
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }
