@@ -9,18 +9,22 @@ import (
 )
 
 type Post struct {
-	ID          int64              `json:"id"`
+	ID          int32              `json:"id"`
 	UserID      int32              `json:"user_id"`
 	Title       string             `json:"title"`
+	Slug        string             `json:"slug"`
 	Content     string             `json:"content"`
 	PublishedAt pgtype.Timestamptz `json:"published_at"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
-	UserID         int32  `json:"user_id"`
-	Username       string `json:"username"`
-	HashedPassword string `json:"hashed_password"`
-	Email          string `json:"email"`
+	ID        int32              `json:"id"`
+	Username  string             `json:"username"`
+	Password  string             `json:"password"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
