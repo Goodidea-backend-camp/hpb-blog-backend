@@ -33,3 +33,6 @@ go.work.sum
 
 # Docker temporary files
 /tmp/
+
+# AI config
+.claude/
