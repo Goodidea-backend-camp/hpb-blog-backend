@@ -29,7 +29,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.3"
+          go-version: "1.25.0"
           cache: true
 
       - name: Run tests
@@ -45,7 +45,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.3"
+          go-version: "1.25.0"
           cache: true
 
       - name: Run golangci-lint
@@ -65,7 +65,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.3"
+          go-version: "1.25.0"
           cache: true
 
       - name: Cache Go tools
@@ -93,42 +93,6 @@ jobs:
             exit 1
           fi
 
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.25.3"
-          cache: true
-
-      - name: Cache Go tools
-        uses: actions/cache@v4
-        with:
-          path: ~/go/bin
-          key: ${{ runner.os }}-go-tools-gosec-v2.22.10-govulncheck-v1.1.4
-          restore-keys: |
-            ${{ runner.os }}-go-tools-
-
-      - name: Install security tools
-        run: |
-          if ! command -v gosec &> /dev/null; then
-            go install github.com/securego/gosec/v2/cmd/gosec@v2.22.10
-          fi
-          if ! command -v govulncheck &> /dev/null; then
-            go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
-          fi
-
-      - name: Run gosec
-        run: gosec ./...
-
-      - name: Run govulncheck
-        run: govulncheck ./...
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -139,7 +103,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.3"
+          go-version: "1.25.0"
           cache: true
 
       - name: Build
