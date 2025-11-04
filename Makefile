@@ -1,9 +1,8 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop
+.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci
 
 COMPOSE_CMD = docker-compose \
-    --env-file ../.env \
-    -f ../docker-compose.yml \
-    -f ../docker-compose.dev.yml
+    --env-file ../../.env \
+    -f ../../docker-compose.yml \
 
 name = $(filter-out $@,$(MAKECMDGOALS))
 
@@ -26,3 +25,19 @@ migrate-drop:
 
 sqlc:
 	@$(COMPOSE_CMD) exec backend sh -c 'sqlc generate'
+
+fmt:
+	@gofumpt -l -w .
+
+lint:
+	@golangci-lint run --config .golangci.yml
+
+test:
+	@go test -race ./...
+
+build:
+	@go build ./...
+
+ci:
+	@$(MAKE) -j 3 test lint build
+	@echo "All CI checks passed!"
