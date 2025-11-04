@@ -12,3 +12,9 @@ repos:
 
       # Stage 3: Ensure go.mod and go.sum are tidy
       - id: go-mod-tidy
+
+      # Stage 4: Generate sqlc code
+      - id: my-cmd-repo
+        name: sqlc generate
+        args: [sqlc, generate]
+        files: \.(sql|yaml)$
