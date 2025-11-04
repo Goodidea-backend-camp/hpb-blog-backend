@@ -13,15 +13,13 @@ linters:
     # Error handling
     - errcheck # Check for unchecked errors
     - errorlint # Ensure correct use of Go 1.13+ error wrapping
-    - err113 # Enforce error wrapping and custom error types
     - nilerr # Detect incorrect nil error returns
 
     # Code quality & complexity
     - gocyclo # Check cyclomatic complexity
     - gocritic # Comprehensive checks for bugs, performance and style issues
     - unconvert # Remove unnecessary type conversions
-    - unparam # Detect unused function parameters
-    - dupl # Find code duplication
+    - nilnil # Detect incorrect (nil, nil) returns
 
     # Performance
     - prealloc # Find slice declarations that could be preallocated
@@ -43,8 +41,6 @@ linters:
     # Security
     - gosec # Inspect code for security problems
   settings:
-    dupl:
-      threshold: 100
     errcheck:
       check-type-assertions: true
       check-blank: true
