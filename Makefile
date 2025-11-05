@@ -39,5 +39,5 @@ build:
 	@go build ./...
 
 ci:
-	@$(MAKE) -j 3 test lint build
-	@echo "All CI checks passed!"
+	@$(MAKE) -j 3 lint test build
+	@echo "Lint, test and build checks passed!"
