@@ -5,18 +5,16 @@ on:
     branches: [main]
     paths-ignore:
       - "**/*.md"
-      - "docs/**"
       - ".gitignore"
       - ".air.toml"
-      - ".tool-versions"
+      - "Makefile"
   pull_request:
     branches: [main]
     paths-ignore:
       - "**/*.md"
-      - "docs/**"
       - ".gitignore"
       - ".air.toml"
-      - ".tool-versions"
+      - "Makefile"
 
 jobs:
   test:
