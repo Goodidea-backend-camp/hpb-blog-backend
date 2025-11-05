@@ -1,0 +1,2 @@
+# Automatically collapse go.sum in GitHub PRs
+go.sum linguist-generated=true
