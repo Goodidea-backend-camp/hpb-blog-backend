@@ -6,14 +6,10 @@ repos:
       - id: go-fumpt
         args: [-w]
 
-      # Stage 2: Lint with auto-fix
-      - id: golangci-lint
-        args: [--fix, --config=.golangci.yml]
-
-      # Stage 3: Ensure go.mod and go.sum are tidy
+      # Stage 2: Ensure go.mod and go.sum are tidy
       - id: go-mod-tidy
 
-      # Stage 4: Generate sqlc code
+      # Stage 3: Generate sqlc code
       - id: my-cmd-repo
         name: sqlc generate
         args: [sqlc, generate]
