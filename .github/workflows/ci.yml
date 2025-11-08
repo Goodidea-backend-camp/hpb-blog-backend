@@ -82,6 +82,7 @@ jobs:
       - name: Run sqlc generate
         run: sqlc generate
 
+      # 確認開發者沒有忘記 sqlc generate，檢查從 .sql 產生的檔案和現存檔案一致
       - name: Check for uncommitted changes
         run: |
           if ! git diff --exit-code internal/db/; then
