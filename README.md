@@ -13,3 +13,11 @@
 - test: 執行測試（包含 race detection）。
 - build: 建置 Go 程式。
 - ci: 平行執行 test、lint、build 三個檢查。
+
+## 本機開發流程
+建議在提交 PR 前，依序執行以下指令：
+
+1. `make fmt`
+2. `sqlc generate`
+3. `make ci` 確認一切無誤
+4. `docker compose up --build` 測試，確認一切無誤
