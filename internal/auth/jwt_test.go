@@ -11,7 +11,143 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const testSecret = "test-secret"
+const testSecret = "test-secret-key-with-sufficient-length-for-validation"
+
+func TestValidateSecret(t *testing.T) {
+	tests := []struct {
+		name      string
+		secret    string
+		wantErr   error
+		assertion string
+	}{
+		{
+			name:      "valid secret with minimum length",
+			secret:    "12345678901234567890123456789012", // exactly 32 characters
+			wantErr:   nil,
+			assertion: "should accept secret with exactly 32 characters",
+		},
+		{
+			name:      "valid secret with more than minimum length",
+			secret:    "this-is-a-very-long-secret-key-with-more-than-32-characters",
+			wantErr:   nil,
+			assertion: "should accept secret longer than 32 characters",
+		},
+		{
+			name:      "empty secret",
+			secret:    "",
+			wantErr:   ErrEmptySecret,
+			assertion: "should reject empty secret",
+		},
+		{
+			name:      "secret too short - 31 characters",
+			secret:    "1234567890123456789012345678901", // 31 characters
+			wantErr:   ErrSecretTooShort,
+			assertion: "should reject secret with 31 characters",
+		},
+		{
+			name:      "secret too short - 16 characters",
+			secret:    "1234567890123456",
+			wantErr:   ErrSecretTooShort,
+			assertion: "should reject secret with 16 characters",
+		},
+		{
+			name:      "secret too short - single character",
+			secret:    "a",
+			wantErr:   ErrSecretTooShort,
+			assertion: "should reject single character secret",
+		},
+		{
+			name:      "valid secret with unicode characters",
+			secret:    "你好世界-this-is-32-chars-long!", // 32+ characters including unicode
+			wantErr:   nil,
+			assertion: "should accept unicode secret with sufficient length",
+		},
+		{
+			name:      "valid secret with special characters",
+			secret:    "!@#$%^&*()_+-=[]{}|;:,.<>?/~`1234567890", // 40+ characters
+			wantErr:   nil,
+			assertion: "should accept secret with special characters",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSecret(tt.secret)
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Errorf("ValidateSecret() error = %v, want %v (%s)", err, tt.wantErr, tt.assertion)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ValidateSecret() unexpected error = %v (%s)", err, tt.assertion)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateSecretBoundaryConditions(t *testing.T) {
+	t.Run("exactly MinSecretLength", func(t *testing.T) {
+		secret := strings.Repeat("a", MinSecretLength)
+		if err := ValidateSecret(secret); err != nil {
+			t.Errorf("ValidateSecret() should accept secret with exactly %d characters, got error: %v", MinSecretLength, err)
+		}
+	})
+
+	t.Run("one less than MinSecretLength", func(t *testing.T) {
+		secret := strings.Repeat("a", MinSecretLength-1)
+		err := ValidateSecret(secret)
+		if !errors.Is(err, ErrSecretTooShort) {
+			t.Errorf("ValidateSecret() should reject secret with %d characters, got error: %v", MinSecretLength-1, err)
+		}
+	})
+
+	t.Run("one more than MinSecretLength", func(t *testing.T) {
+		secret := strings.Repeat("a", MinSecretLength+1)
+		if err := ValidateSecret(secret); err != nil {
+			t.Errorf("ValidateSecret() should accept secret with %d characters, got error: %v", MinSecretLength+1, err)
+		}
+	})
+}
+
+func TestValidateSecretConcurrent(t *testing.T) {
+	const numGoroutines = 100
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	validSecret := strings.Repeat("a", MinSecretLength)
+	invalidSecret := "short"
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+
+			// Alternate between valid and invalid secrets
+			var secret string
+			var expectedErr error
+			if id%2 == 0 {
+				secret = validSecret
+				expectedErr = nil
+			} else {
+				secret = invalidSecret
+				expectedErr = ErrSecretTooShort
+			}
+
+			err := ValidateSecret(secret)
+			if expectedErr != nil {
+				if !errors.Is(err, expectedErr) {
+					t.Errorf("Concurrent ValidateSecret() error = %v, want %v", err, expectedErr)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Concurrent ValidateSecret() unexpected error = %v", err)
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
+}
 
 func TestGenerateToken(t *testing.T) {
 	userID := int32(123)

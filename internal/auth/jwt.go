@@ -9,20 +9,34 @@ import (
 )
 
 const (
-	// JWT token expiration time
+	// JWTExpiration is the JWT token expiration time
 	JWTExpiration = 7 * 24 * time.Hour // 7 days
+	// MinSecretLength is the minimum required length for JWT secret
+	MinSecretLength = 32
 )
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
-	ErrTokenExpired = errors.New("token expired")
-	ErrEmptySecret  = errors.New("secret key cannot be empty")
+	ErrInvalidToken   = errors.New("invalid token")
+	ErrTokenExpired   = errors.New("token expired")
+	ErrEmptySecret    = errors.New("secret key cannot be empty")
+	ErrSecretTooShort = errors.New("secret key must be at least 32 characters")
 )
 
 // Claims represents JWT claims with user identification.
 type Claims struct {
 	UserID int32 `json:"user_id"`
 	jwt.RegisteredClaims
+}
+
+// ValidateSecret validates the strength of the JWT secret.
+func ValidateSecret(secret string) error {
+	if secret == "" {
+		return ErrEmptySecret
+	}
+	if len(secret) < MinSecretLength {
+		return ErrSecretTooShort
+	}
+	return nil
 }
 
 // GenerateToken creates a signed JWT token for the given user.
