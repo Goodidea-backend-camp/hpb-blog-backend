@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/api"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/db"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
 	"github.com/gin-gonic/gin"
@@ -43,10 +44,10 @@ func run() error {
 	// 初始化 Handler
 	handler := api.NewHandler(postStore)
 
-	// 從 .env 取得 JWT secret
+	// 從 .env 取得 JWT secret 並驗證
 	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		return errors.New("JWT_SECRET environment variable is not set")
+	if err := auth.ValidateSecret(jwtSecret); err != nil {
+		return fmt.Errorf("invalid JWT secret: %w", err)
 	}
 
 	// 初始化 AuthHandler
