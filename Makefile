@@ -1,4 +1,4 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci
+.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci seed
 
 # ====================================================================================
 # Development Workflow Notes
@@ -66,3 +66,6 @@ build:
 ci:
 	@$(MAKE) -j 3 lint test build
 	@echo "Lint, test and build checks passed!"
+
+seed:
+	@$(COMPOSE_CMD) exec -T backend go run /app/cmd/seed/main.go
