@@ -1,4 +1,4 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci
+.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci seed
 
 COMPOSE_CMD = docker-compose \
     --env-file ../../.env \
@@ -42,14 +42,5 @@ ci:
 	@$(MAKE) -j 3 lint test build
 	@echo "Lint, test and build checks passed!"
 
-factory:
-	@$(COMPOSE_CMD) exec backend go run /app/cmd/factory/main.go
-
-factory-seed:
-	@echo "🏭 Generating test users and seeding database..."
-	@$(COMPOSE_CMD) exec -T backend go run /app/cmd/factory/main.go | tee /tmp/factory_output.txt
-	@echo ""
-	@echo "📝 Extracting SQL INSERT statements..."
-	@grep "INSERT INTO" /tmp/factory_output.txt | $(COMPOSE_CMD) exec -T db sh -c 'psql -U $$POSTGRES_USER -d $$POSTGRES_DB'
-	@echo ""
-	@echo "✅ Test users seeded successfully!"
+seed:
+	@$(COMPOSE_CMD) exec -T backend go run /app/cmd/seed/main.go
