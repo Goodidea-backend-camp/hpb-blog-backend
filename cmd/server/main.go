@@ -38,13 +38,27 @@ func run() error {
 	// 初始化 DB Queries 和 Store
 	queries := db.New(dbpool)
 	postStore := store.NewPostStore(queries)
+	authStore := store.NewAuthStore(queries)
 
 	// 初始化 Handler
 	handler := api.NewHandler(postStore)
 
+	// 從 .env 取得 JWT secret
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return errors.New("JWT_SECRET environment variable is not set")
+	}
+
+	// 初始化 AuthHandler
+	authHandler, err := api.NewAuthHandler(authStore, jwtSecret)
+	if err != nil {
+		return fmt.Errorf("failed to create auth handler: %w", err)
+	}
+
 	// 初始化 Gin Router
 	router := gin.Default()
 	handler.RegisterRoutes(router)
+	authHandler.RegisterRoutes(router)
 
 	// 健康檢查路由
 	router.GET("/healthz", func(c *gin.Context) {
