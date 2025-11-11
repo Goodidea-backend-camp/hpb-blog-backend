@@ -79,17 +79,13 @@ jobs:
             go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
           fi
 
-      - name: Run sqlc generate
-        run: sqlc generate
-
       # 確認開發者沒有忘記 sqlc generate，檢查從 .sql 產生的檔案和現存檔案一致
-      - name: Check for uncommitted changes
-        run: |
-          if ! git diff --exit-code internal/db/; then
-            echo "sqlc generated code is out of sync with queries"
-            echo "Run 'sqlc generate' and commit the changes"
-            exit 1
-          fi
+      - name: Check generated code is in sync
+        run: sqlc diff
+
+      # 對 SQL 查詢運行 lint 規則，提早發現反模式
+      - name: Lint SQL queries
+        run: sqlc vet
 
   build:
     name: Build
