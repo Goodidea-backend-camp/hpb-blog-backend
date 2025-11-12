@@ -178,11 +178,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
-// Logout handles user logout by validating the JWT token and returning 204 No Content.
+// Logout handles user logout by returning 204 No Content.
 // Token validation is performed by the AuthMiddleware, so this handler only needs to
 // return success. Since JWT is stateless, the actual token cleanup is handled by the client.
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// Token has already been validated by AuthMiddleware
-	// User ID is available in context if needed: c.Get("user_id")
 	c.Status(http.StatusNoContent)
 }
