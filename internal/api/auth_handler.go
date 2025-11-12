@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/middleware"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -79,11 +79,14 @@ func NewAuthHandler(authStore store.AuthStore, jwtSecret string, opts ...AuthHan
 }
 
 // RegisterRoutes registers authentication routes to the router.
+// The logout endpoint is protected by the auth middleware to ensure only
+// authenticated users can logout.
 func (h *AuthHandler) RegisterRoutes(router *gin.Engine) {
 	authGroup := router.Group("/auth")
 	{
 		authGroup.POST("/login", h.Login)
-		authGroup.POST("/logout", h.Logout)
+		// Protect logout endpoint with auth middleware
+		authGroup.POST("/logout", middleware.AuthMiddleware(h.jwtSecret), h.Logout)
 	}
 }
 
@@ -175,45 +178,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
-// Logout validates the JWT token and returns 204 No Content on success.
-// Since JWT is stateless, the actual token cleanup is handled by the client.
+// Logout handles user logout by validating the JWT token and returning 204 No Content.
+// Token validation is performed by the AuthMiddleware, so this handler only needs to
+// return success. Since JWT is stateless, the actual token cleanup is handled by the client.
 func (h *AuthHandler) Logout(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusForbidden, ErrorResponse{
-			Code:    http.StatusForbidden,
-			Message: "Authorization header required",
-		})
-		return
-	}
-
-	// Validate authorization format
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	if token == authHeader {
-		// No "Bearer " prefix found
-		c.JSON(http.StatusForbidden, ErrorResponse{
-			Code:    http.StatusForbidden,
-			Message: "Invalid authorization format",
-		})
-		return
-	}
-
-	// Validate JWT token
-	_, err := auth.ValidateToken(token, h.jwtSecret)
-	if err != nil {
-		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrTokenExpired) {
-			c.JSON(http.StatusForbidden, ErrorResponse{
-				Code:    http.StatusForbidden,
-				Message: "Invalid or expired token",
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
+	// Token has already been validated by AuthMiddleware
+	// User ID is available in context if needed: c.Get("user_id")
 	c.Status(http.StatusNoContent)
 }

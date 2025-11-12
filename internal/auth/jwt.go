@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,13 +14,18 @@ const (
 	JWTExpiration = 7 * 24 * time.Hour // 7 days
 	// MinSecretLength is the minimum required length for JWT secret
 	MinSecretLength = 32
+	// BearerPrefix is the standard Bearer token prefix in Authorization header
+	BearerPrefix = "Bearer "
 )
 
 var (
-	ErrInvalidToken   = errors.New("invalid token")
-	ErrTokenExpired   = errors.New("token expired")
-	ErrEmptySecret    = errors.New("secret key cannot be empty")
-	ErrSecretTooShort = errors.New("secret key must be at least 32 characters")
+	ErrInvalidToken      = errors.New("invalid token")
+	ErrTokenExpired      = errors.New("token expired")
+	ErrEmptySecret       = errors.New("secret key cannot be empty")
+	ErrSecretTooShort    = errors.New("secret key must be at least 32 characters")
+	ErrMissingAuthHeader = errors.New("authorization header required")
+	ErrInvalidAuthFormat = errors.New("invalid authorization format")
+	ErrEmptyToken        = errors.New("token cannot be empty")
 )
 
 // Claims represents JWT claims with user identification.
@@ -37,6 +43,25 @@ func ValidateSecret(secret string) error {
 		return ErrSecretTooShort
 	}
 	return nil
+}
+
+// ExtractBearerToken extracts and validates the JWT token from Authorization header.
+// Returns the token string without the "Bearer " prefix.
+func ExtractBearerToken(authHeader string) (string, error) {
+	if authHeader == "" {
+		return "", ErrMissingAuthHeader
+	}
+
+	if !strings.HasPrefix(authHeader, BearerPrefix) {
+		return "", ErrInvalidAuthFormat
+	}
+
+	token := strings.TrimPrefix(authHeader, BearerPrefix)
+	if strings.TrimSpace(token) == "" {
+		return "", ErrEmptyToken
+	}
+
+	return token, nil
 }
 
 // GenerateToken creates a signed JWT token for the given user.

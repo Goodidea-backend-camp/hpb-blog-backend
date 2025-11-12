@@ -477,3 +477,180 @@ func TestConcurrentTokenOperations(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestExtractBearerToken(t *testing.T) {
+	tests := []struct {
+		name       string
+		authHeader string
+		wantToken  string
+		wantErr    error
+	}{
+		{
+			name:       "valid bearer token",
+			authHeader: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			wantToken:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			wantErr:    nil,
+		},
+		{
+			name:       "empty authorization header",
+			authHeader: "",
+			wantToken:  "",
+			wantErr:    ErrMissingAuthHeader,
+		},
+		{
+			name:       "missing Bearer prefix",
+			authHeader: "Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			wantToken:  "",
+			wantErr:    ErrInvalidAuthFormat,
+		},
+		{
+			name:       "lowercase bearer",
+			authHeader: "bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+			wantToken:  "",
+			wantErr:    ErrInvalidAuthFormat,
+		},
+		{
+			name:       "Bearer without space",
+			authHeader: "Bearertoken",
+			wantToken:  "",
+			wantErr:    ErrInvalidAuthFormat,
+		},
+		{
+			name:       "Bearer with empty token",
+			authHeader: "Bearer ",
+			wantToken:  "",
+			wantErr:    ErrEmptyToken,
+		},
+		{
+			name:       "Bearer with whitespace only token",
+			authHeader: "Bearer    ",
+			wantToken:  "",
+			wantErr:    ErrEmptyToken,
+		},
+		{
+			name:       "Bearer with tab only token",
+			authHeader: "Bearer \t",
+			wantToken:  "",
+			wantErr:    ErrEmptyToken,
+		},
+		{
+			name:       "valid token with trailing spaces",
+			authHeader: "Bearer token123  ",
+			wantToken:  "token123  ",
+			wantErr:    nil,
+		},
+		{
+			name:       "valid token with leading spaces after Bearer",
+			authHeader: "Bearer  token123",
+			wantToken:  " token123",
+			wantErr:    nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			token, err := ExtractBearerToken(tt.authHeader)
+
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Errorf("ExtractBearerToken() error = %v, want %v", err, tt.wantErr)
+				}
+				if token != "" {
+					t.Errorf("ExtractBearerToken() token = %q, want empty string on error", token)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("ExtractBearerToken() unexpected error = %v", err)
+				}
+				if token != tt.wantToken {
+					t.Errorf("ExtractBearerToken() token = %q, want %q", token, tt.wantToken)
+				}
+			}
+		})
+	}
+}
+
+func TestExtractBearerTokenConcurrent(t *testing.T) {
+	const numGoroutines = 100
+	var wg sync.WaitGroup
+	wg.Add(numGoroutines)
+
+	testCases := []struct {
+		header  string
+		wantErr error
+	}{
+		{"Bearer validtoken123", nil},
+		{"", ErrMissingAuthHeader},
+		{"bearer lowercase", ErrInvalidAuthFormat},
+		{"Bearer ", ErrEmptyToken},
+	}
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+			tc := testCases[id%len(testCases)]
+
+			_, err := ExtractBearerToken(tc.header)
+			if tc.wantErr != nil {
+				if !errors.Is(err, tc.wantErr) {
+					t.Errorf("Concurrent ExtractBearerToken() error = %v, want %v", err, tc.wantErr)
+				}
+			} else if err != nil {
+				t.Errorf("Concurrent ExtractBearerToken() unexpected error = %v", err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+func TestExtractBearerTokenEdgeCases(t *testing.T) {
+	t.Run("very long token", func(t *testing.T) {
+		longToken := strings.Repeat("a", 10000)
+		authHeader := "Bearer " + longToken
+		token, err := ExtractBearerToken(authHeader)
+		if err != nil {
+			t.Errorf("ExtractBearerToken() should accept long tokens, error = %v", err)
+		}
+		if token != longToken {
+			t.Errorf("ExtractBearerToken() should return full long token")
+		}
+	})
+
+	t.Run("token with special characters", func(t *testing.T) {
+		specialToken := "eyJ!@#$%^&*()"
+		authHeader := "Bearer " + specialToken
+		token, err := ExtractBearerToken(authHeader)
+		if err != nil {
+			t.Errorf("ExtractBearerToken() should accept tokens with special characters, error = %v", err)
+		}
+		if token != specialToken {
+			t.Errorf("ExtractBearerToken() token = %q, want %q", token, specialToken)
+		}
+	})
+
+	t.Run("token with unicode characters", func(t *testing.T) {
+		unicodeToken := "token你好世界" // #nosec G101 -- This is a test token, not a credential
+		authHeader := "Bearer " + unicodeToken
+		token, err := ExtractBearerToken(authHeader)
+		if err != nil {
+			t.Errorf("ExtractBearerToken() should accept tokens with unicode, error = %v", err)
+		}
+		if token != unicodeToken {
+			t.Errorf("ExtractBearerToken() token = %q, want %q", token, unicodeToken)
+		}
+	})
+
+	t.Run("multiple Bearer prefixes", func(t *testing.T) {
+		authHeader := "Bearer Bearer token123"
+		token, err := ExtractBearerToken(authHeader)
+		if err != nil {
+			t.Errorf("ExtractBearerToken() unexpected error = %v", err)
+		}
+		// Should return "Bearer token123" (the part after first "Bearer ")
+		expected := "Bearer token123"
+		if token != expected {
+			t.Errorf("ExtractBearerToken() token = %q, want %q", token, expected)
+		}
+	})
+}
