@@ -1,3 +1,21 @@
+# Pre-commit Configuration (Optional Developer Tool)
+#
+# Usage:
+# - This file is OPTIONAL for team members, not mandatory
+# - Requires Python pre-commit package to take effect (pip install pre-commit && pre-commit install)
+# - Developers who don't install pre-commit will not be affected by this file
+#
+# Functionality:
+# - This configuration AUTOMATICALLY MODIFIES staged files before commit (not just checking)
+# - Stage 1: Auto-format Go code (gofumpt)
+# - Stage 2: Auto-tidy go.mod and go.sum (go mod tidy)
+# - Stage 3: Auto-generate sqlc code (when .sql or .yaml files change)
+#
+# Important Notes:
+# - These operations directly modify files and include them in the same commit
+# - If you don't want files automatically modified during commit, DO NOT install/use pre-commit
+# - CI pipeline already has comprehensive checks; not using this tool won't affect the development workflow
+
 repos:
   - repo: https://github.com/tekwizely/pre-commit-golang
     rev: v1.0.0-rc.1
