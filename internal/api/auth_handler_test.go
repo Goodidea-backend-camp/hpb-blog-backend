@@ -410,6 +410,49 @@ func TestLogin_DatabaseError(t *testing.T) {
 	}
 }
 
+// TestLogin_DatabaseTimeout verifies that database query timeout is properly enforced.
+func TestLogin_DatabaseTimeout(t *testing.T) {
+	t.Parallel()
+	mockStore := &mockAuthStore{
+		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
+			// Simulate a slow database query that exceeds the loginTimeout
+			select {
+			case <-time.After(loginTimeout + time.Second):
+				// This should never be reached due to timeout
+				t.Error("Query should have timed out")
+				return db.User{}, nil
+			case <-ctx.Done():
+				// Context was canceled due to timeout
+				return db.User{}, ctx.Err()
+			}
+		},
+	}
+
+	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	if err != nil {
+		t.Fatalf("Failed to create handler: %v", err)
+	}
+
+	w := makeLoginRequest(handler, testUsername, testPassword)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Status code = %v, want %v", w.Code, http.StatusInternalServerError)
+	}
+
+	var response ErrorResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to parse error response: %v", err)
+	}
+
+	if response.Code != http.StatusInternalServerError {
+		t.Errorf("Error code = %v, want %v", response.Code, http.StatusInternalServerError)
+	}
+
+	if response.Message != "Internal server error" {
+		t.Errorf("Error message = %v, want 'Internal server error'", response.Message)
+	}
+}
+
 // TestLogin_SpecialCharacters tests login with special characters.
 func TestLogin_SpecialCharacters(t *testing.T) {
 	t.Parallel()

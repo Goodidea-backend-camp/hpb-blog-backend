@@ -1,16 +1,23 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	// loginTimeout is the maximum duration for database operations during login.
+	loginTimeout = 5 * time.Second
 )
 
 // AuthHandler handles authentication-related HTTP requests.
@@ -118,7 +125,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var userExists bool
 	var passwordHash string
 
-	user, err := h.authStore.GetUserByUsername(c.Request.Context(), req.Username)
+	// Set timeout for database query to prevent indefinite blocking
+	ctx, cancel := context.WithTimeout(c.Request.Context(), loginTimeout)
+	defer cancel()
+
+	user, err := h.authStore.GetUserByUsername(ctx, req.Username)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Code:    http.StatusInternalServerError,
