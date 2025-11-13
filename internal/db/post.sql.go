@@ -15,7 +15,7 @@ INSERT INTO posts (
 ) VALUES (
   $1, $2, $3
 )
-RETURNING id, user_id, title, content, published_at, created_at, updated_at
+RETURNING id, user_id, title, slug, content, published_at, created_at, updated_at, deleted_at
 `
 
 type CreatePostParams struct {
@@ -31,10 +31,12 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 		&i.ID,
 		&i.UserID,
 		&i.Title,
+		&i.Slug,
 		&i.Content,
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -44,33 +46,35 @@ DELETE FROM posts
 WHERE id = $1
 `
 
-func (q *Queries) DeletePost(ctx context.Context, id int64) error {
+func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 	_, err := q.db.Exec(ctx, deletePost, id)
 	return err
 }
 
 const getPost = `-- name: GetPost :one
-SELECT id, user_id, title, content, published_at, created_at, updated_at FROM posts
+SELECT id, user_id, title, slug, content, published_at, created_at, updated_at, deleted_at FROM posts
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetPost(ctx context.Context, id int64) (Post, error) {
+func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 	row := q.db.QueryRow(ctx, getPost, id)
 	var i Post
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.Title,
+		&i.Slug,
 		&i.Content,
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listPosts = `-- name: ListPosts :many
-SELECT id, user_id, title, content, published_at, created_at, updated_at FROM posts
+SELECT id, user_id, title, slug, content, published_at, created_at, updated_at, deleted_at FROM posts
 ORDER BY id
 `
 
@@ -87,10 +91,12 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 			&i.ID,
 			&i.UserID,
 			&i.Title,
+			&i.Slug,
 			&i.Content,
 			&i.PublishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -106,11 +112,11 @@ const updatePost = `-- name: UpdatePost :one
 UPDATE posts
 SET title = $2, content = $3
 WHERE id = $1
-RETURNING id, user_id, title, content, published_at, created_at, updated_at
+RETURNING id, user_id, title, slug, content, published_at, created_at, updated_at, deleted_at
 `
 
 type UpdatePostParams struct {
-	ID      int64  `json:"id"`
+	ID      int32  `json:"id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
@@ -122,10 +128,12 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (Post, e
 		&i.ID,
 		&i.UserID,
 		&i.Title,
+		&i.Slug,
 		&i.Content,
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

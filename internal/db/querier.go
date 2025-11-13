@@ -10,8 +10,8 @@ import (
 
 type Querier interface {
 	CreatePost(ctx context.Context, arg CreatePostParams) (Post, error)
-	DeletePost(ctx context.Context, id int64) error
-	GetPost(ctx context.Context, id int64) (Post, error)
+	DeletePost(ctx context.Context, id int32) error
+	GetPost(ctx context.Context, id int32) (Post, error)
 	ListPosts(ctx context.Context) ([]Post, error)
 	UpdatePost(ctx context.Context, arg UpdatePostParams) (Post, error)
 }

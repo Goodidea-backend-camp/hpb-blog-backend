@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - ".gitignore"
+      - ".air.toml"
+      - "Makefile"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - ".gitignore"
+      - ".air.toml"
+      - "Makefile"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.0"
+          cache: true
+
+      - name: Run tests
+        run: go test -v -race ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.0"
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.6.0
+          args: --config .golangci.yml
+
+  generated-code:
+    name: Generated Code Sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.0"
+          cache: true
+
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-tools-sqlc-v1.30.0
+          restore-keys: |
+            ${{ runner.os }}-go-tools-sqlc-
+
+      - name: Install sqlc
+        run: |
+          if ! command -v sqlc &> /dev/null; then
+            go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+          fi
+
+      # 確認開發者沒有忘記 sqlc generate，檢查從 .sql 產生的檔案和現存檔案一致
+      - name: Check generated code is in sync
+        run: sqlc diff
+
+      # 對 SQL 查詢運行 lint 規則，提早發現反模式
+      - name: Lint SQL queries
+        run: sqlc vet
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, lint, generated-code]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.0"
+          cache: true
+
+      - name: Build
+        run: go build -v ./...

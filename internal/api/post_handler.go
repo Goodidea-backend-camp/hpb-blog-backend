@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -38,15 +39,15 @@ func (h *Handler) CreatePost(c *gin.Context) {
 }
 
 func (h *Handler) GetPost(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	post, err := h.PostStore.GetPost(c, id)
+	post, err := h.PostStore.GetPost(c, int32(id))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
 			return
 		}
@@ -73,7 +74,7 @@ type updatePostRequest struct {
 }
 
 func (h *Handler) UpdatePost(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
@@ -86,7 +87,7 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 	}
 
 	arg := db.UpdatePostParams{
-		ID:      id,
+		ID:      int32(id),
 		Title:   req.Title,
 		Content: req.Content,
 	}
@@ -101,13 +102,13 @@ func (h *Handler) UpdatePost(c *gin.Context) {
 }
 
 func (h *Handler) DeletePost(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
-	err = h.PostStore.DeletePost(c, id)
+	err = h.PostStore.DeletePost(c, int32(id))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
