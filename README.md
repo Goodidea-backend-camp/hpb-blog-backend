@@ -81,3 +81,5 @@ Reference:
 - [Effective Go](https://go.dev/doc/effective_go)
 - [Go Style](https://google.github.io/styleguide/go/index)
 - [Twelve Go Best Practices](https://go.dev/talks/2013/bestpractices.slide)
+
+實際在 Code Review 時，建議也以文件當作 Review 的依據。在初期應避免參雜過多個人主觀意見。
