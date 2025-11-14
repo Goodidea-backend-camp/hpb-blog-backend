@@ -74,3 +74,10 @@ Reference:
 ├── Dockerfile
 └── README.md
 ```
+
+## Coding Style
+
+在實作時，若對 Coding Style 有疑慮，建議先以以下三份文件為主：
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Go Style](https://google.github.io/styleguide/go/index)
+- [Twelve Go Best Practices](https://go.dev/talks/2013/bestpractices.slide)
