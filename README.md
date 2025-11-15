@@ -37,7 +37,12 @@ Reference:
 │   ├── /api            # API 層 (Gin)
 │   │   ├── handler.go      # Gin 路由和 Handler 綁定
 │   │   ├── user_handler.go # 處理 /users 相關的 HTTP 請求
-│   │   └── middleware.go   # 中間件 (auth, logging)
+│   │
+├── /middleware         # 獨立的 Middleware 層
+│   ├── middleware.go     # (可選) 存放 struct 和 New 函數
+│   ├── auth.go
+│   ├── ratelimit.go
+│   └── security.go
 │   │
 │   ├── config/                 # 設定檔讀取 (e.g., Viper)
 │   │
