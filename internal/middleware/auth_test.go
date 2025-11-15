@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthMiddleware(t *testing.T) {
+func TestAuthRequired(t *testing.T) {
 	// Set Gin to test mode
 	gin.SetMode(gin.TestMode)
 
@@ -116,7 +116,7 @@ func TestAuthMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup router with middleware
 			router := gin.New()
-			router.Use(AuthMiddleware(jwtSecret))
+			router.Use(AuthRequired(jwtSecret))
 
 			// Add a test endpoint
 			router.GET("/test", func(c *gin.Context) {
@@ -163,12 +163,12 @@ func TestAuthMiddleware(t *testing.T) {
 	}
 }
 
-func TestAuthMiddleware_ContextPropagation(t *testing.T) {
+func TestAuthRequired_ContextPropagation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	jwtSecret := "test-secret-key-with-sufficient-length"
 
 	router := gin.New()
-	router.Use(AuthMiddleware(jwtSecret))
+	router.Use(AuthRequired(jwtSecret))
 
 	var capturedUserID int32
 	router.GET("/test", func(c *gin.Context) {

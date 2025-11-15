@@ -13,8 +13,8 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// AuthMiddleware validates JWT tokens and protects routes from unauthorized access.
-func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
+// AuthRequired validates JWT tokens and protects routes from unauthorized access.
+func AuthRequired(jwtSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 

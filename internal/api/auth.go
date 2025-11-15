@@ -86,7 +86,7 @@ func (h *AuthHandler) RegisterRoutes(router *gin.Engine) {
 	{
 		authGroup.POST("/login", h.Login)
 		// Protect logout endpoint with auth middleware
-		authGroup.POST("/logout", middleware.AuthMiddleware(h.jwtSecret), h.Logout)
+		authGroup.POST("/logout", middleware.AuthRequired(h.jwtSecret), h.Logout)
 	}
 }
 
@@ -179,7 +179,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 // Logout handles user logout by returning 204 No Content.
-// Token validation is performed by the AuthMiddleware, so this handler only needs to
+// Token validation is performed by the AuthRequired middleware, so this handler only needs to
 // return success. Since JWT is stateless, the actual token cleanup is handled by the client.
 func (h *AuthHandler) Logout(c *gin.Context) {
 	c.Status(http.StatusNoContent)
