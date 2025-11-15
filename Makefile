@@ -68,4 +68,4 @@ ci:
 	@echo "Lint, test and build checks passed!"
 
 seed:
-	@$(COMPOSE_CMD) exec -T backend go run /app/cmd/seed/main.go
+	@$(COMPOSE_CMD) exec -T backend go run /app/scripts/seed.go
