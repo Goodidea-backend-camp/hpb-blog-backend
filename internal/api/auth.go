@@ -11,7 +11,6 @@ import (
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/middleware"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/repository"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -102,13 +101,10 @@ func NewAuthHandler(authRepo repository.AuthRepository, jwtSecret string, opts .
 }
 
 // RegisterRoutes registers authentication routes to the router.
-// The logout endpoint is protected by the auth middleware to ensure only
-// authenticated users can logout.
 func (h *AuthHandler) RegisterRoutes(router *gin.Engine) {
 	authGroup := router.Group("/auth")
 	{
 		authGroup.POST("/login", h.Login)
-		// Protect logout endpoint with auth middleware
 		authGroup.POST("/logout", middleware.AuthRequired(h.jwtSecret), h.Logout)
 	}
 }
@@ -133,17 +129,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	defer cancel()
 
 	user, err := h.authRepo.GetUserByUsername(ctx, req.Username)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
-		})
-		return
-	}
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		userExists = false
-		passwordHash = h.dummyPasswordHash
+	if err != nil {
+		// Handle user not found (use dummy hash for timing attack prevention)
+		if errors.Is(err, repository.ErrUserNotFound) {
+			userExists = false
+			passwordHash = h.dummyPasswordHash
+		} else {
+			// All other errors are treated as internal server errors
+			// TODO: [HPB-211] Add proper logging here to capture the actual error for debugging
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
+			return
+		}
 	} else {
 		userExists = true
 		passwordHash = user.Password

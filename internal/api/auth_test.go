@@ -14,8 +14,8 @@ import (
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/db"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/repository"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -185,7 +185,7 @@ func TestLogin_Success(t *testing.T) {
 			if username == testUsername {
 				return testUser, nil
 			}
-			return db.User{}, pgx.ErrNoRows
+			return db.User{}, repository.ErrUserNotFound
 		},
 	}
 
@@ -319,7 +319,7 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 			setupMock: func() *mockAuthRepository {
 				return &mockAuthRepository{
 					getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
-						return db.User{}, pgx.ErrNoRows
+						return db.User{}, repository.ErrUserNotFound
 					},
 				}
 			},
@@ -469,7 +469,7 @@ func TestLogin_SpecialCharacters(t *testing.T) {
 			if username == specialUsername {
 				return testUser, nil
 			}
-			return db.User{}, pgx.ErrNoRows
+			return db.User{}, repository.ErrUserNotFound
 		},
 	}
 
@@ -542,7 +542,7 @@ func TestLogin_TimingAttackPrevention(t *testing.T) {
 				if username == testUsername {
 					return testUser, nil
 				}
-				return db.User{}, pgx.ErrNoRows
+				return db.User{}, repository.ErrUserNotFound
 			},
 		}
 
@@ -596,7 +596,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 					user.Username = username
 					return user, nil
 				}
-				return db.User{}, pgx.ErrNoRows
+				return db.User{}, repository.ErrUserNotFound
 			},
 		}
 
@@ -651,7 +651,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 				if username == testUsername {
 					return testUser, nil
 				}
-				return db.User{}, pgx.ErrNoRows
+				return db.User{}, repository.ErrUserNotFound
 			},
 		}
 
@@ -729,7 +729,7 @@ func TestLogin_ContentType(t *testing.T) {
 			if username == testUsername {
 				return testUser, nil
 			}
-			return db.User{}, pgx.ErrNoRows
+			return db.User{}, repository.ErrUserNotFound
 		},
 	}
 
@@ -805,7 +805,7 @@ func TestLogin_SQLInjectionAttempts(t *testing.T) {
 	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			// No user should be found for SQL injection attempts
-			return db.User{}, pgx.ErrNoRows
+			return db.User{}, repository.ErrUserNotFound
 		},
 	}
 
@@ -958,7 +958,7 @@ func TestLogin_UnicodeAndSpecialCharacters(t *testing.T) {
 					if username == tt.username {
 						return testUser, nil
 					}
-					return db.User{}, pgx.ErrNoRows
+					return db.User{}, repository.ErrUserNotFound
 				},
 			}
 
@@ -1008,7 +1008,7 @@ func TestLogin_JWTGenerationFailure(t *testing.T) {
 				if username == testUsername {
 					return testUser, nil
 				}
-				return db.User{}, pgx.ErrNoRows
+				return db.User{}, repository.ErrUserNotFound
 			},
 		}
 

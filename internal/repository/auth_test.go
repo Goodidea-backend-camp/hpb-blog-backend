@@ -102,7 +102,7 @@ func TestGetUserByUsername(t *testing.T) {
 			wantUser:      db.User{},
 			wantErr:       true,
 			checkErrType:  true,
-			expectedError: pgx.ErrNoRows,
+			expectedError: ErrUserNotFound,
 		},
 		{
 			name:     "database connection error",
@@ -122,7 +122,7 @@ func TestGetUserByUsername(t *testing.T) {
 			wantUser:      db.User{},
 			wantErr:       true,
 			checkErrType:  true,
-			expectedError: pgx.ErrNoRows,
+			expectedError: ErrUserNotFound,
 		},
 		{
 			name:     "username with special characters",
@@ -142,7 +142,7 @@ func TestGetUserByUsername(t *testing.T) {
 			wantUser:      db.User{},
 			wantErr:       true,
 			checkErrType:  true,
-			expectedError: context.DeadlineExceeded,
+			expectedError: ErrTimeout,
 		},
 	}
 
@@ -203,8 +203,8 @@ func TestGetUserByUsername_ContextCancellation(t *testing.T) {
 	if err == nil {
 		t.Error("GetUserByUsername() expected error with canceled context, got nil")
 	}
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("GetUserByUsername() error = %v, want context.Canceled", err)
+	if !errors.Is(err, ErrCanceled) {
+		t.Errorf("GetUserByUsername() error = %v, want ErrCanceled", err)
 	}
 }
 
