@@ -7,16 +7,23 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/api"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/db"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/middleware"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var errDatabaseURLNotSet = errors.New("DATABASE_URL environment variable is not set")
+var (
+	errDatabaseURLNotSet   = errors.New("DATABASE_URL environment variable is not set")
+	errBackendDomainNotSet = errors.New("BACKEND_DOMAIN environment variable must be set")
+)
 
 func run() error {
 	databaseUrl := os.Getenv("DATABASE_URL")
@@ -58,6 +65,31 @@ func run() error {
 
 	// 初始化 Gin Router
 	router := gin.Default()
+
+	// 設定 CORS (Cross-Origin Resource Sharing)
+	allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+	if len(allowedOrigins) == 0 || allowedOrigins[0] == "" {
+		return errors.New("ALLOWED_ORIGINS environment variable must be set")
+	}
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// 設定安全 Headers
+	router.Use(middleware.SecurityHeaders())
+
+	// 設定 Host Header 驗證（防止 SSRF 攻擊）
+	backendDomain := os.Getenv("BACKEND_DOMAIN")
+	if backendDomain == "" {
+		return errBackendDomainNotSet
+	}
+	router.Use(middleware.HostHeaderValidation(backendDomain))
+
 	handler.RegisterRoutes(router)
 	authHandler.RegisterRoutes(router)
 
