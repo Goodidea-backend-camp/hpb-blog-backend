@@ -20,6 +20,29 @@ const (
 	loginTimeout = 5 * time.Second
 )
 
+// LoginRequest represents the login request payload.
+type LoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// LoginUser represents user information in the login response.
+type LoginUser struct {
+	Username string `json:"username"`
+}
+
+// LoginResponse represents a successful login response.
+type LoginResponse struct {
+	Token string    `json:"token"`
+	User  LoginUser `json:"user"`
+}
+
+// ErrorResponse represents an error response.
+type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
 	authStore store.AuthStore
@@ -88,29 +111,6 @@ func (h *AuthHandler) RegisterRoutes(router *gin.Engine) {
 		// Protect logout endpoint with auth middleware
 		authGroup.POST("/logout", middleware.AuthRequired(h.jwtSecret), h.Logout)
 	}
-}
-
-// LoginRequest represents the login request payload.
-type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-// LoginUser represents user information in the login response.
-type LoginUser struct {
-	Username string `json:"username"`
-}
-
-// LoginResponse represents a successful login response.
-type LoginResponse struct {
-	Token string    `json:"token"`
-	User  LoginUser `json:"user"`
-}
-
-// ErrorResponse represents an error response.
-type ErrorResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 }
 
 // Login handles user authentication.
