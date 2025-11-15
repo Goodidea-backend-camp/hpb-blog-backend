@@ -32,8 +32,8 @@ const (
 	nonexistentUsername = "nonexistent"
 )
 
-// mockAuthStore is a mock implementation of store.AuthStore for testing.
-type mockAuthStore struct {
+// mockAuthRepository is a mock implementation of repository.AuthRepository for testing.
+type mockAuthRepository struct {
 	mu                    sync.Mutex
 	getUserByUsernameFunc func(ctx context.Context, username string) (db.User, error)
 	callCount             int
@@ -41,7 +41,7 @@ type mockAuthStore struct {
 	lastUsername          string
 }
 
-func (m *mockAuthStore) GetUserByUsername(ctx context.Context, username string) (db.User, error) {
+func (m *mockAuthRepository) GetUserByUsername(ctx context.Context, username string) (db.User, error) {
 	m.mu.Lock()
 	m.callCount++
 	m.lastContext = ctx
@@ -56,21 +56,21 @@ func (m *mockAuthStore) GetUserByUsername(ctx context.Context, username string) 
 }
 
 // getCallCount returns the call count in a thread-safe manner.
-func (m *mockAuthStore) getCallCount() int {
+func (m *mockAuthRepository) getCallCount() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.callCount
 }
 
 // getLastUsername returns the last username in a thread-safe manner.
-func (m *mockAuthStore) getLastUsername() string {
+func (m *mockAuthRepository) getLastUsername() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.lastUsername
 }
 
 // getLastContext returns the last context in a thread-safe manner.
-func (m *mockAuthStore) getLastContext() context.Context {
+func (m *mockAuthRepository) getLastContext() context.Context {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.lastContext
@@ -145,8 +145,8 @@ func TestNewAuthHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStore := &mockAuthStore{}
-			handler, err := NewAuthHandler(mockStore, tt.jwtSecret, WithBcryptCost(bcrypt.MinCost))
+			mockRepo := &mockAuthRepository{}
+			handler, err := NewAuthHandler(mockRepo, tt.jwtSecret, WithBcryptCost(bcrypt.MinCost))
 
 			if tt.wantError {
 				if err == nil {
@@ -180,7 +180,7 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			if username == testUsername {
 				return testUser, nil
@@ -189,7 +189,7 @@ func TestLogin_Success(t *testing.T) {
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -216,19 +216,19 @@ func TestLogin_Success(t *testing.T) {
 	}
 
 	// Verify mock was called correctly
-	if mockStore.getCallCount() != 1 {
-		t.Errorf("GetUserByUsername called %d times, want 1", mockStore.getCallCount())
+	if mockRepo.getCallCount() != 1 {
+		t.Errorf("GetUserByUsername called %d times, want 1", mockRepo.getCallCount())
 	}
 
-	if mockStore.getLastUsername() != testUsername {
-		t.Errorf("GetUserByUsername called with username %v, want %v", mockStore.getLastUsername(), testUsername)
+	if mockRepo.getLastUsername() != testUsername {
+		t.Errorf("GetUserByUsername called with username %v, want %v", mockRepo.getLastUsername(), testUsername)
 	}
 }
 
 // TestLogin_InvalidRequest tests various invalid request scenarios.
 func TestLogin_InvalidRequest(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		setupMock     func() *mockAuthStore
+		setupMock     func() *mockAuthRepository
 		loginUsername string
 		loginPassword string
 		wantCode      int
@@ -316,8 +316,8 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 	}{
 		{
 			name: "user not found",
-			setupMock: func() *mockAuthStore {
-				return &mockAuthStore{
+			setupMock: func() *mockAuthRepository {
+				return &mockAuthRepository{
 					getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 						return db.User{}, pgx.ErrNoRows
 					},
@@ -331,8 +331,8 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 		},
 		{
 			name: "wrong password",
-			setupMock: func() *mockAuthStore {
-				return &mockAuthStore{
+			setupMock: func() *mockAuthRepository {
+				return &mockAuthRepository{
 					getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 						return testUser, nil
 					},
@@ -348,8 +348,8 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStore := tt.setupMock()
-			handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+			mockRepo := tt.setupMock()
+			handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 			if err != nil {
 				t.Fatalf("Failed to create handler: %v", err)
 			}
@@ -369,8 +369,8 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 				t.Errorf("Error message = %v, want %v", response.Message, tt.wantMessage)
 			}
 
-			if mockStore.getCallCount() != tt.wantCallCount {
-				t.Errorf("GetUserByUsername called %d times, want %d", mockStore.getCallCount(), tt.wantCallCount)
+			if mockRepo.getCallCount() != tt.wantCallCount {
+				t.Errorf("GetUserByUsername called %d times, want %d", mockRepo.getCallCount(), tt.wantCallCount)
 			}
 		})
 	}
@@ -379,13 +379,13 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 // TestLogin_DatabaseError tests database error handling.
 func TestLogin_DatabaseError(t *testing.T) {
 	t.Parallel()
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			return db.User{}, errors.New("database connection error")
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -413,7 +413,7 @@ func TestLogin_DatabaseError(t *testing.T) {
 // TestLogin_DatabaseTimeout verifies that database query timeout is properly enforced.
 func TestLogin_DatabaseTimeout(t *testing.T) {
 	t.Parallel()
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			// Simulate a slow database query that exceeds the loginTimeout
 			select {
@@ -428,7 +428,7 @@ func TestLogin_DatabaseTimeout(t *testing.T) {
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -464,7 +464,7 @@ func TestLogin_SpecialCharacters(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			if username == specialUsername {
 				return testUser, nil
@@ -473,7 +473,7 @@ func TestLogin_SpecialCharacters(t *testing.T) {
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -502,7 +502,7 @@ func TestLogin_ContextPropagation(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			// Verify context is not nil
 			if ctx == nil {
@@ -512,7 +512,7 @@ func TestLogin_ContextPropagation(t *testing.T) {
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -523,7 +523,7 @@ func TestLogin_ContextPropagation(t *testing.T) {
 		t.Errorf("Status code = %v, want %v", w.Code, http.StatusOK)
 	}
 
-	if mockStore.getLastContext() == nil {
+	if mockRepo.getLastContext() == nil {
 		t.Error("Context was not passed to GetUserByUsername")
 	}
 }
@@ -537,7 +537,7 @@ func TestLogin_TimingAttackPrevention(t *testing.T) {
 			t.Fatalf("Failed to create test user: %v", err)
 		}
 
-		mockStore := &mockAuthStore{
+		mockRepo := &mockAuthRepository{
 			getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 				if username == testUsername {
 					return testUser, nil
@@ -546,7 +546,7 @@ func TestLogin_TimingAttackPrevention(t *testing.T) {
 			},
 		}
 
-		handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+		handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 		if err != nil {
 			t.Fatalf("Failed to create handler: %v", err)
 		}
@@ -588,7 +588,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 			t.Fatalf("Failed to create test user: %v", err)
 		}
 
-		mockStore := &mockAuthStore{
+		mockRepo := &mockAuthRepository{
 			getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 				// Create different user for each username
 				if username == testUsername || len(username) >= 4 && username[:4] == "user" {
@@ -600,7 +600,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 			},
 		}
 
-		handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+		handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 		if err != nil {
 			t.Fatalf("Failed to create handler: %v", err)
 		}
@@ -646,7 +646,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 			t.Fatalf("Failed to create test user: %v", err)
 		}
 
-		mockStore := &mockAuthStore{
+		mockRepo := &mockAuthRepository{
 			getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 				if username == testUsername {
 					return testUser, nil
@@ -655,7 +655,7 @@ func TestLogin_ConcurrentRequests(t *testing.T) {
 			},
 		}
 
-		handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+		handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 		if err != nil {
 			t.Fatalf("Failed to create handler: %v", err)
 		}
@@ -724,7 +724,7 @@ func TestLogin_ContentType(t *testing.T) {
 		t.Fatalf("Failed to create test user: %v", err)
 	}
 
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			if username == testUsername {
 				return testUser, nil
@@ -733,7 +733,7 @@ func TestLogin_ContentType(t *testing.T) {
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -802,14 +802,14 @@ func TestLogin_ContentType(t *testing.T) {
 // TestLogin_SQLInjectionAttempts tests protection against SQL injection attacks.
 func TestLogin_SQLInjectionAttempts(t *testing.T) {
 	t.Parallel()
-	mockStore := &mockAuthStore{
+	mockRepo := &mockAuthRepository{
 		getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 			// No user should be found for SQL injection attempts
 			return db.User{}, pgx.ErrNoRows
 		},
 	}
 
-	handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -883,8 +883,8 @@ func TestLogin_SQLInjectionAttempts(t *testing.T) {
 			}
 
 			// Verify the mock was called with the malicious username
-			if mockStore.getLastUsername() != tt.username {
-				t.Errorf("GetUserByUsername called with username %v, want %v", mockStore.getLastUsername(), tt.username)
+			if mockRepo.getLastUsername() != tt.username {
+				t.Errorf("GetUserByUsername called with username %v, want %v", mockRepo.getLastUsername(), tt.username)
 			}
 		})
 	}
@@ -953,7 +953,7 @@ func TestLogin_UnicodeAndSpecialCharacters(t *testing.T) {
 				t.Fatalf("Failed to create test user: %v", err)
 			}
 
-			mockStore := &mockAuthStore{
+			mockRepo := &mockAuthRepository{
 				getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 					if username == tt.username {
 						return testUser, nil
@@ -962,7 +962,7 @@ func TestLogin_UnicodeAndSpecialCharacters(t *testing.T) {
 				},
 			}
 
-			handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+			handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 			if err != nil {
 				t.Fatalf("Failed to create handler: %v", err)
 			}
@@ -987,8 +987,8 @@ func TestLogin_UnicodeAndSpecialCharacters(t *testing.T) {
 			}
 
 			// Verify the mock was called with the correct username
-			if mockStore.getLastUsername() != tt.username {
-				t.Errorf("GetUserByUsername called with username %v, want %v", mockStore.getLastUsername(), tt.username)
+			if mockRepo.getLastUsername() != tt.username {
+				t.Errorf("GetUserByUsername called with username %v, want %v", mockRepo.getLastUsername(), tt.username)
 			}
 		})
 	}
@@ -1003,7 +1003,7 @@ func TestLogin_JWTGenerationFailure(t *testing.T) {
 			t.Fatalf("Failed to create test user: %v", err)
 		}
 
-		mockStore := &mockAuthStore{
+		mockRepo := &mockAuthRepository{
 			getUserByUsernameFunc: func(ctx context.Context, username string) (db.User, error) {
 				if username == testUsername {
 					return testUser, nil
@@ -1014,7 +1014,7 @@ func TestLogin_JWTGenerationFailure(t *testing.T) {
 
 		// Create handler with empty secret to trigger JWT generation failure
 		// Note: This will fail at handler creation, not during login
-		_, err = NewAuthHandler(mockStore, "", WithBcryptCost(bcrypt.MinCost))
+		_, err = NewAuthHandler(mockRepo, "", WithBcryptCost(bcrypt.MinCost))
 		if err == nil {
 			t.Error("NewAuthHandler should return error with empty JWT secret")
 		}
@@ -1024,8 +1024,8 @@ func TestLogin_JWTGenerationFailure(t *testing.T) {
 	})
 
 	t.Run("handler creation with valid secret succeeds", func(t *testing.T) {
-		mockStore := &mockAuthStore{}
-		handler, err := NewAuthHandler(mockStore, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+		mockRepo := &mockAuthRepository{}
+		handler, err := NewAuthHandler(mockRepo, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 		if err != nil {
 			t.Errorf("NewAuthHandler should not return error with valid secret: %v", err)
 		}
@@ -1038,7 +1038,7 @@ func TestLogin_JWTGenerationFailure(t *testing.T) {
 // TestLogout_Success tests successful logout with valid JWT token.
 func TestLogout_Success(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1070,7 +1070,7 @@ func TestLogout_Success(t *testing.T) {
 // TestLogout_MissingAuthHeader tests logout without Authorization header.
 func TestLogout_MissingAuthHeader(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1105,7 +1105,7 @@ func TestLogout_MissingAuthHeader(t *testing.T) {
 // TestLogout_InvalidTokenFormat tests logout with invalid Bearer token format.
 func TestLogout_InvalidTokenFormat(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1172,7 +1172,7 @@ func TestLogout_InvalidTokenFormat(t *testing.T) {
 // TestLogout_InvalidToken tests logout with invalid JWT token.
 func TestLogout_InvalidToken(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1245,7 +1245,7 @@ func TestLogout_InvalidToken(t *testing.T) {
 // TestLogout_ExpiredToken tests logout with expired JWT token.
 func TestLogout_ExpiredToken(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1295,7 +1295,7 @@ func TestLogout_ConcurrentRequests(t *testing.T) {
 	t.Parallel()
 	const numGoroutines = 50
 
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1347,7 +1347,7 @@ func TestLogout_ConcurrentRequests(t *testing.T) {
 // TestLogout_WithDifferentUserIDs tests logout with different user IDs in tokens.
 func TestLogout_WithDifferentUserIDs(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}
@@ -1385,7 +1385,7 @@ func TestLogout_WithDifferentUserIDs(t *testing.T) {
 // Since JWT is stateless, the same valid token should work multiple times.
 func TestLogout_SameTokenMultipleTimes(t *testing.T) {
 	t.Parallel()
-	handler, err := NewAuthHandler(&mockAuthStore{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
+	handler, err := NewAuthHandler(&mockAuthRepository{}, testJWTSecret, WithBcryptCost(bcrypt.MinCost))
 	if err != nil {
 		t.Fatalf("Failed to create handler: %v", err)
 	}

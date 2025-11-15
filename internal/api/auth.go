@@ -9,7 +9,7 @@ import (
 
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/middleware"
-	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/repository"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -45,7 +45,7 @@ type ErrorResponse struct {
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
-	authStore store.AuthStore
+	authRepo  repository.AuthRepository
 	jwtSecret string
 	// dummyPasswordHash is used to prevent timing attacks.
 	// When a user doesn't exist, we compare against this hash to ensure
@@ -70,7 +70,7 @@ func WithBcryptCost(cost int) AuthHandlerOption {
 }
 
 // NewAuthHandler creates a new AuthHandler instance.
-func NewAuthHandler(authStore store.AuthStore, jwtSecret string, opts ...AuthHandlerOption) (*AuthHandler, error) {
+func NewAuthHandler(authRepo repository.AuthRepository, jwtSecret string, opts ...AuthHandlerOption) (*AuthHandler, error) {
 	if jwtSecret == "" {
 		return nil, errors.New("JWT secret cannot be empty")
 	}
@@ -95,7 +95,7 @@ func NewAuthHandler(authStore store.AuthStore, jwtSecret string, opts ...AuthHan
 	}
 
 	return &AuthHandler{
-		authStore:         authStore,
+		authRepo:          authRepo,
 		jwtSecret:         jwtSecret,
 		dummyPasswordHash: string(hash),
 	}, nil
@@ -132,7 +132,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), loginTimeout)
 	defer cancel()
 
-	user, err := h.authStore.GetUserByUsername(ctx, req.Username)
+	user, err := h.authRepo.GetUserByUsername(ctx, req.Username)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Code:    http.StatusInternalServerError,

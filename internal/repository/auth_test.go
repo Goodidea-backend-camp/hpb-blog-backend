@@ -1,4 +1,4 @@
-package store
+package repository
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// mockAuthQueries implements store.AuthQuerier interface for testing
+// mockAuthQueries implements repository.AuthQuerier interface for testing
 type mockAuthQueries struct {
 	getUserByUsernameFunc func(ctx context.Context, username string) (db.User, error)
 }
@@ -23,7 +23,7 @@ func (m *mockAuthQueries) GetUserByUsername(ctx context.Context, username string
 	return db.User{}, nil
 }
 
-// Verify mockAuthQueries implements store.AuthQuerier
+// Verify mockAuthQueries implements repository.AuthQuerier
 var _ AuthQuerier = (*mockAuthQueries)(nil)
 
 // Helper function to create a test user
@@ -46,19 +46,19 @@ func createTestUser(id int32, username, password string) db.User {
 	}
 }
 
-func TestNewAuthStore(t *testing.T) {
+func TestNewAuthRepository(t *testing.T) {
 	tests := []struct {
 		name    string
 		queries AuthQuerier
 		wantNil bool
 	}{
 		{
-			name:    "create store with valid queries",
+			name:    "create repository with valid queries",
 			queries: &mockAuthQueries{},
 			wantNil: false,
 		},
 		{
-			name:    "create store with nil queries",
+			name:    "create repository with nil queries",
 			queries: nil,
 			wantNil: false,
 		},
@@ -66,9 +66,9 @@ func TestNewAuthStore(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := NewAuthStore(tt.queries)
-			if (store == nil) != tt.wantNil {
-				t.Errorf("NewAuthStore() = %v, want nil = %v", store, tt.wantNil)
+			repo := NewAuthRepository(tt.queries)
+			if (repo == nil) != tt.wantNil {
+				t.Errorf("NewAuthRepository() = %v, want nil = %v", repo, tt.wantNil)
 			}
 		})
 	}
@@ -151,10 +151,10 @@ func TestGetUserByUsername(t *testing.T) {
 			mock := &mockAuthQueries{
 				getUserByUsernameFunc: tt.mockFunc,
 			}
-			store := NewAuthStore(mock)
+			repo := NewAuthRepository(mock)
 
 			ctx := context.Background()
-			user, err := store.GetUserByUsername(ctx, tt.username)
+			user, err := repo.GetUserByUsername(ctx, tt.username)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetUserByUsername() error = %v, wantErr %v", err, tt.wantErr)
@@ -193,13 +193,13 @@ func TestGetUserByUsername_ContextCancellation(t *testing.T) {
 			}
 		},
 	}
-	store := NewAuthStore(mock)
+	repo := NewAuthRepository(mock)
 
 	// Create canceled context
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := store.GetUserByUsername(ctx, "testuser")
+	_, err := repo.GetUserByUsername(ctx, "testuser")
 	if err == nil {
 		t.Error("GetUserByUsername() expected error with canceled context, got nil")
 	}
@@ -214,7 +214,7 @@ func TestGetUserByUsername_Concurrent(t *testing.T) {
 			return createTestUser(1, username, "hashedpassword"), nil
 		},
 	}
-	store := NewAuthStore(mock)
+	repo := NewAuthRepository(mock)
 
 	ctx := context.Background()
 	done := make(chan error, 10)
@@ -222,7 +222,7 @@ func TestGetUserByUsername_Concurrent(t *testing.T) {
 	// Run multiple concurrent calls
 	for i := range 10 {
 		go func(id int) {
-			_, err := store.GetUserByUsername(ctx, "testuser")
+			_, err := repo.GetUserByUsername(ctx, "testuser")
 			done <- err
 		}(i)
 	}

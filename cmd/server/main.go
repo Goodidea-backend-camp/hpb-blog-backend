@@ -14,6 +14,7 @@ import (
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/auth"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/db"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/middleware"
+	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/repository"
 	"github.com/Goodidea-backend-camp/hpb-blog-backend/internal/store"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,7 @@ func run() error {
 	// 初始化 DB Queries 和 Store
 	queries := db.New(dbpool)
 	postStore := store.NewPostStore(queries)
-	authStore := store.NewAuthStore(queries)
+	authRepo := repository.NewAuthRepository(queries)
 
 	// 初始化 Handler
 	handler := api.NewHandler(postStore)
@@ -58,7 +59,7 @@ func run() error {
 	}
 
 	// 初始化 AuthHandler
-	authHandler, err := api.NewAuthHandler(authStore, jwtSecret)
+	authHandler, err := api.NewAuthHandler(authRepo, jwtSecret)
 	if err != nil {
 		return fmt.Errorf("failed to create auth handler: %w", err)
 	}
