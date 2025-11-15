@@ -143,7 +143,11 @@ func TestHostHeaderValidation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup router with middleware
 			router := gin.New()
-			router.Use(HostHeaderValidation(tt.expectedHost))
+			var allowedHosts []string
+			if tt.expectedHost != "" {
+				allowedHosts = []string{tt.expectedHost}
+			}
+			router.Use(HostHeaderValidation(allowedHosts))
 
 			// Add a test endpoint
 			router.GET("/test", func(c *gin.Context) {
@@ -180,7 +184,7 @@ func TestHostHeaderValidation_EmptyConfig_NextCalled(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	router.Use(HostHeaderValidation(""))
+	router.Use(HostHeaderValidation([]string{}))
 
 	handlerCalled := false
 	router.GET("/test", func(c *gin.Context) {
@@ -201,7 +205,7 @@ func TestHostHeaderValidation_AbortPreventsNextHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
-	router.Use(HostHeaderValidation("expected.com"))
+	router.Use(HostHeaderValidation([]string{"expected.com"}))
 
 	handlerCalled := false
 	router.GET("/test", func(c *gin.Context) {
@@ -223,7 +227,7 @@ func TestCombinedSecurityMiddlewares(t *testing.T) {
 
 	router := gin.New()
 	router.Use(SecurityHeaders())
-	router.Use(HostHeaderValidation("example.com"))
+	router.Use(HostHeaderValidation([]string{"example.com"}))
 
 	router.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "success"})

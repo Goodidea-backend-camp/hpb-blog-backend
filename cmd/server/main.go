@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	errDatabaseURLNotSet   = errors.New("DATABASE_URL environment variable is not set")
-	errBackendDomainNotSet = errors.New("BACKEND_DOMAIN environment variable must be set")
+	errDatabaseURLNotSet         = errors.New("DATABASE_URL environment variable is not set")
+	errAllowedBackendHostsNotSet = errors.New("ALLOWED_BACKEND_HOSTS environment variable must be set")
 )
 
 func run() error {
@@ -85,11 +85,16 @@ func run() error {
 	router.Use(middleware.SecurityHeaders())
 
 	// 設定 Host Header 驗證（防止 SSRF 攻擊）
-	backendDomain := os.Getenv("BACKEND_DOMAIN")
-	if backendDomain == "" {
-		return errBackendDomainNotSet
+	allowedBackendHostsStr := os.Getenv("ALLOWED_BACKEND_HOSTS")
+	if allowedBackendHostsStr == "" {
+		return errAllowedBackendHostsNotSet
 	}
-	router.Use(middleware.HostHeaderValidation(backendDomain))
+	allowedBackendHosts := strings.Split(allowedBackendHostsStr, ",")
+	// 移除空白字元
+	for i := range allowedBackendHosts {
+		allowedBackendHosts[i] = strings.TrimSpace(allowedBackendHosts[i])
+	}
+	router.Use(middleware.HostHeaderValidation(allowedBackendHosts))
 
 	handler.RegisterRoutes(router)
 	authHandler.RegisterRoutes(router)

@@ -35,25 +35,28 @@ func SecurityHeaders() gin.HandlerFunc {
 	}
 }
 
-// HostHeaderValidation validates the Host header to prevent
-// SSRF (Server-Side Request Forgery) and open redirection attacks.
-func HostHeaderValidation(expectedHost string) gin.HandlerFunc {
+// HostHeaderValidation validates the Host header to prevent SSRF and open redirection attacks.
+func HostHeaderValidation(allowedHosts []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip validation if expectedHost is not configured
-		if expectedHost == "" {
+		// Skip validation if no hosts are configured
+		if len(allowedHosts) == 0 {
 			c.Next()
 			return
 		}
 
-		// Validate Host header matches expected domain
-		if c.Request.Host != expectedHost {
-			c.AbortWithStatusJSON(http.StatusBadRequest, ErrorResponse{
-				Code:    http.StatusBadRequest,
-				Message: "Invalid host header",
-			})
-			return
+		// Check if request Host header matches any allowed host
+		requestHost := c.Request.Host
+		for _, allowedHost := range allowedHosts {
+			if requestHost == allowedHost {
+				c.Next()
+				return
+			}
 		}
 
-		c.Next()
+		// If no match found, reject the request
+		c.AbortWithStatusJSON(http.StatusBadRequest, ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid host header",
+		})
 	}
 }
