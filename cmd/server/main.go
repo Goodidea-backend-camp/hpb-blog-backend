@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	corsMaxAge = 12 * time.Hour
+	corsMaxAge = 24 * time.Hour
 )
 
 var (
