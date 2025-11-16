@@ -28,6 +28,7 @@ const (
 var (
 	errDatabaseURLNotSet         = errors.New("DATABASE_URL environment variable is not set")
 	errAllowedBackendHostsNotSet = errors.New("ALLOWED_BACKEND_HOSTS environment variable must be set")
+	errBackendPortNotSet         = errors.New("BACKEND_PORT environment variable must be set")
 )
 
 func run() error {
@@ -114,7 +115,7 @@ func run() error {
 
 	backendPort := os.Getenv("BACKEND_PORT")
 	if backendPort == "" {
-		backendPort = "8080"
+		return errBackendPortNotSet
 	}
 
 	log.Printf("Starting server on :%s", backendPort)
