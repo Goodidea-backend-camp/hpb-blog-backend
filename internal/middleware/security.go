@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 )
@@ -46,11 +47,9 @@ func HostHeaderValidation(allowedHosts []string) gin.HandlerFunc {
 
 		// Check if request Host header matches any allowed host
 		requestHost := c.Request.Host
-		for _, allowedHost := range allowedHosts {
-			if requestHost == allowedHost {
-				c.Next()
-				return
-			}
+		if slices.Contains(allowedHosts, requestHost) {
+			c.Next()
+			return
 		}
 
 		// If no match found, reject the request
