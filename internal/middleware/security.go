@@ -39,9 +39,12 @@ func SecurityHeaders() gin.HandlerFunc {
 // HostHeaderValidation validates the Host header to prevent SSRF and open redirection attacks.
 func HostHeaderValidation(allowedHosts []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Skip validation if no hosts are configured
 		if len(allowedHosts) == 0 {
-			c.Next()
+			// TODO: [HPB-211] Add proper logging here to capture the actual error for debugging
+			c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorResponse{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			})
 			return
 		}
 
@@ -53,9 +56,10 @@ func HostHeaderValidation(allowedHosts []string) gin.HandlerFunc {
 		}
 
 		// If no match found, reject the request
+		// TODO: [HPB-211] Add proper logging here to capture the actual error for debugging
 		c.AbortWithStatusJSON(http.StatusBadRequest, ErrorResponse{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid host header",
+			Message: "Invalid authorization request",
 		})
 	}
 }

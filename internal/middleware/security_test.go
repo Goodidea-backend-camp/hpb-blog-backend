@@ -112,7 +112,7 @@ func TestHostHeaderValidation(t *testing.T) {
 			requestHost:    "malicious.com",
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
-			errorMessage:   "Invalid host header",
+			errorMessage:   "Invalid authorization request",
 		},
 		{
 			name:           "Mismatched port - should fail",
@@ -120,14 +120,15 @@ func TestHostHeaderValidation(t *testing.T) {
 			requestHost:    "example.com:9090",
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
-			errorMessage:   "Invalid host header",
+			errorMessage:   "Invalid authorization request",
 		},
 		{
-			name:           "Empty expected host - should skip validation",
+			name:           "Empty expected host - should return 500",
 			expectedHost:   "",
 			requestHost:    "any-host.com",
-			expectedStatus: http.StatusOK,
-			expectError:    false,
+			expectedStatus: http.StatusInternalServerError,
+			expectError:    true,
+			errorMessage:   "Internal server error",
 		},
 		{
 			name:           "Subdomain mismatch - should fail",
@@ -135,7 +136,7 @@ func TestHostHeaderValidation(t *testing.T) {
 			requestHost:    "api.example.com",
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
-			errorMessage:   "Invalid host header",
+			errorMessage:   "Invalid authorization request",
 		},
 	}
 
@@ -197,8 +198,8 @@ func TestHostHeaderValidation_EmptyConfig_NextCalled(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.True(t, handlerCalled, "Next handler should be called when expectedHost is empty")
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.False(t, handlerCalled, "Next handler should NOT be called when allowedHosts is empty")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestHostHeaderValidation_AbortPreventsNextHandler(t *testing.T) {
