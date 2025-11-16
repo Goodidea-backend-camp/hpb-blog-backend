@@ -21,6 +21,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	corsMaxAge = 12 * time.Hour
+)
+
 var (
 	errDatabaseURLNotSet         = errors.New("DATABASE_URL environment variable is not set")
 	errAllowedBackendHostsNotSet = errors.New("ALLOWED_BACKEND_HOSTS environment variable must be set")
@@ -78,7 +82,7 @@ func run() error {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		MaxAge:           corsMaxAge,
 	}))
 
 	// 設定安全 Headers
