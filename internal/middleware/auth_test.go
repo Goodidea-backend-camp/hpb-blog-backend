@@ -45,7 +45,7 @@ func TestAuthRequired(t *testing.T) {
 			name:            "Missing Authorization header - should fail",
 			authHeader:      "",
 			setupToken:      func() string { return "" },
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid authorization format",
 			expectUserIDSet: false,
 		},
@@ -57,7 +57,7 @@ func TestAuthRequired(t *testing.T) {
 				require.NoError(t, err)
 				return token
 			},
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid authorization format",
 			expectUserIDSet: false,
 		},
@@ -65,7 +65,7 @@ func TestAuthRequired(t *testing.T) {
 			name:            "Empty token after Bearer prefix",
 			authHeader:      "Bearer ",
 			setupToken:      func() string { return "" },
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid authorization format",
 			expectUserIDSet: false,
 		},
@@ -86,7 +86,7 @@ func TestAuthRequired(t *testing.T) {
 				require.NoError(t, err)
 				return tokenString
 			},
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid token",
 			expectUserIDSet: false,
 		},
@@ -94,7 +94,7 @@ func TestAuthRequired(t *testing.T) {
 			name:            "Invalid token signature - should fail",
 			authHeader:      "Bearer ",
 			setupToken:      func() string { return "invalid.jwt.token" },
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid token",
 			expectUserIDSet: false,
 		},
@@ -106,7 +106,7 @@ func TestAuthRequired(t *testing.T) {
 				require.NoError(t, err)
 				return token
 			},
-			expectedStatus:  http.StatusUnauthorized,
+			expectedStatus:  http.StatusForbidden,
 			expectedMessage: "Invalid token",
 			expectUserIDSet: false,
 		},

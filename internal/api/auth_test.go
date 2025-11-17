@@ -325,7 +325,7 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 			},
 			loginUsername: nonexistentUsername,
 			loginPassword: testPassword,
-			wantCode:      http.StatusUnauthorized,
+			wantCode:      http.StatusForbidden,
 			wantMessage:   "Invalid username or password",
 			wantCallCount: 1,
 		},
@@ -340,7 +340,7 @@ func TestLogin_AuthenticationFailures(t *testing.T) {
 			},
 			loginUsername: testUsername,
 			loginPassword: testWrongPassword,
-			wantCode:      http.StatusUnauthorized,
+			wantCode:      http.StatusForbidden,
 			wantMessage:   "Invalid username or password",
 			wantCallCount: 1,
 		},
@@ -825,42 +825,42 @@ func TestLogin_SQLInjectionAttempts(t *testing.T) {
 			name:     "OR 1=1 attack",
 			username: "' OR '1'='1",
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 		{
 			name:     "comment out password check",
 			username: "admin'--",
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 		{
 			name:     "drop table attempt",
 			username: "'; DROP TABLE users;--",
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 		{
 			name:     "double quote OR attack",
 			username: `" OR ""="`,
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 		{
 			name:     "union select attack",
 			username: "' UNION SELECT NULL, NULL, NULL--",
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 		{
 			name:     "stacked queries",
 			username: "admin'; DELETE FROM users WHERE '1'='1",
 			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			wantCode: http.StatusForbidden,
 			wantMsg:  "Invalid username or password",
 		},
 	}
@@ -1084,8 +1084,8 @@ func TestLogout_MissingAuthHeader(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("Status code = %v, want %v", w.Code, http.StatusUnauthorized)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Status code = %v, want %v", w.Code, http.StatusForbidden)
 	}
 
 	var response ErrorResponse
@@ -1093,8 +1093,8 @@ func TestLogout_MissingAuthHeader(t *testing.T) {
 		t.Fatalf("Failed to parse error response: %v", err)
 	}
 
-	if response.Code != http.StatusUnauthorized {
-		t.Errorf("Error code = %v, want %v", response.Code, http.StatusUnauthorized)
+	if response.Code != http.StatusForbidden {
+		t.Errorf("Error code = %v, want %v", response.Code, http.StatusForbidden)
 	}
 
 	if response.Message != "Invalid authorization format" {
@@ -1153,8 +1153,8 @@ func TestLogout_InvalidTokenFormat(t *testing.T) {
 
 			router.ServeHTTP(w, req)
 
-			if w.Code != http.StatusUnauthorized {
-				t.Errorf("Status code = %v, want %v. %s", w.Code, http.StatusUnauthorized, tt.wantDescription)
+			if w.Code != http.StatusForbidden {
+				t.Errorf("Status code = %v, want %v. %s", w.Code, http.StatusForbidden, tt.wantDescription)
 			}
 
 			var response ErrorResponse
@@ -1216,8 +1216,8 @@ func TestLogout_InvalidToken(t *testing.T) {
 
 			router.ServeHTTP(w, req)
 
-			if w.Code != http.StatusUnauthorized {
-				t.Errorf("Status code = %v, want %v", w.Code, http.StatusUnauthorized)
+			if w.Code != http.StatusForbidden {
+				t.Errorf("Status code = %v, want %v", w.Code, http.StatusForbidden)
 			}
 
 			var response ErrorResponse
@@ -1271,8 +1271,8 @@ func TestLogout_ExpiredToken(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Errorf("Status code = %v, want %v", w.Code, http.StatusUnauthorized)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Status code = %v, want %v", w.Code, http.StatusForbidden)
 	}
 
 	var response ErrorResponse
@@ -1280,8 +1280,8 @@ func TestLogout_ExpiredToken(t *testing.T) {
 		t.Fatalf("Failed to parse error response: %v", err)
 	}
 
-	if response.Code != http.StatusUnauthorized {
-		t.Errorf("Error code = %v, want %v", response.Code, http.StatusUnauthorized)
+	if response.Code != http.StatusForbidden {
+		t.Errorf("Error code = %v, want %v", response.Code, http.StatusForbidden)
 	}
 
 	// Middleware returns "Invalid token" for malformed tokens

@@ -22,8 +22,8 @@ func AuthRequired(jwtSecret string) gin.HandlerFunc {
 		token, err := auth.ExtractBearerToken(authHeader)
 		if err != nil {
 			// TODO: [HPB-211] Add proper logging here to capture the actual error for debugging
-			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
-				Code:    http.StatusUnauthorized,
+			c.AbortWithStatusJSON(http.StatusForbidden, ErrorResponse{
+				Code:    http.StatusForbidden,
 				Message: "Invalid authorization format",
 			})
 			return
@@ -33,8 +33,8 @@ func AuthRequired(jwtSecret string) gin.HandlerFunc {
 		claims, err := auth.ValidateToken(token, jwtSecret)
 		if err != nil {
 			// TODO: [HPB-211] Add proper logging here to capture the actual error for debugging
-			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
-				Code:    http.StatusUnauthorized,
+			c.AbortWithStatusJSON(http.StatusForbidden, ErrorResponse{
+				Code:    http.StatusForbidden,
 				Message: "Invalid token",
 			})
 			return

@@ -153,8 +153,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	passwordErr := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password))
 
 	if !userExists || passwordErr != nil {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Code:    http.StatusUnauthorized,
+		c.JSON(http.StatusForbidden, ErrorResponse{
+			Code:    http.StatusForbidden,
 			Message: "Invalid username or password",
 		})
 		return
