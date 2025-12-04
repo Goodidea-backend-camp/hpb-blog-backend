@@ -14,6 +14,29 @@
 - build: 建置 Go 程式。
 - ci: 平行執行 test、lint、build 三個檢查。
 
+## Artisan CLI 工具
+
+Artisan 是專案的命令列工具，用於執行各種管理任務。
+
+### 使用方式
+
+**在 Container 中執行（推薦）：**
+```bash
+make artisan make:user
+```
+
+### 可用命令
+
+- `make:user` - 互動式建立新使用者
+  - 會提示輸入使用者名稱和密碼
+  - 密碼會使用 bcrypt 加密
+  - 自動檢查使用者名稱是否重複
+
+### 注意事項
+
+- Artisan 命令只能在 `ENVIRONMENT=dev` 環境下執行
+- 需要正確設定 `DATABASE_URL` 環境變數
+
 ## 本機開發流程
 建議在提交 PR 前，依序執行以下指令：
 
