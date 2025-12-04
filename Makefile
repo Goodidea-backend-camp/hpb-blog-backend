@@ -1,4 +1,4 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc fmt lint test build ci
+.PHONY: migrate-create migrate-up migrate-down migrate-status migrate-drop sqlc artisan fmt lint test build ci
 
 # ====================================================================================
 # Development Workflow Notes
@@ -39,6 +39,23 @@ migrate-drop:
 
 sqlc:
 	@$(COMPOSE_CMD) exec backend sh -c 'sqlc generate'
+
+# ====================================================================================
+# Artisan Commands (CLI 工具指令)
+# ====================================================================================
+# artisan: 在 container 中執行 CLI 工具（推薦）
+# artisan-local: 在本機執行 CLI 工具（需要本機有 DATABASE_URL）
+#
+# 使用範例：
+#   make artisan make:user
+# ====================================================================================
+
+artisan:
+	@$(COMPOSE_CMD) exec backend go run cmd/artisan/main.go $(name)
+
+# 讓 make 不會把後面的參數當作 target
+%:
+	@:
 
 # ====================================================================================
 # Local Development Commands (本機開發指令)
